@@ -16,10 +16,16 @@ LABEL io.openshift.tags="base rhel7"
 #ENV container oci
 #ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+RUN sed -i -e 's/os.path.exists(HOST_CONFIG_DIR)/False/g' /usr/lib64/python2.7/site-packages/rhsm/config.py
+RUN echo "{\"virt.host_type\": \"Not Applicable\", \"virt.is_guest\": \"False\"}" > /etc/rhsm/facts/custom.facts
 RUN yum install http://satellite.zircon.local/pub/katello-ca-consumer-latest.noarch.rpm -y
 RUN subscription-manager register --org="Zircon" --activationkey="rhel7"
-RUN subscription-manager repos --enable=rhel-7-server-rpms
-RUN yum update -y && yum clean all
-RUN yum install vim screen insights-client -y
+RUN subscription-manager repos --enable=rhel-7-server-rpms --enable=rhel-7-server-satellite-tools-6.7-rpms
+RUN yum install vim screen insights-client hostname katello-host-tools mlocate wget traceroute mtr bind-utils tcpdmp -y
+ADD redhat-internal-cert-install-0.1-20.el7.csb.noarch.rpm /tmp
+ADD redhat-internal-ddns-client-1.3-14.el7.csb.noarch.rpm /tmp
+RUN yum localinstall /tmp/redhat-internal-ddns-client-1.3-14.el7.csb.noarch.rpm /tmp/redhat-internal-cert-install-0.1-20.el7.csb.noarch.rpm -y
+RUN subscription-manager unregister
+RUN subscription-manager clean
 
 CMD ["/bin/bash"]
